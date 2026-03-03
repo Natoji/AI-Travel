@@ -1,16 +1,83 @@
-# React + Vite
+# AI Travel Planner Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React + Vite frontend for the AI Travel Planner app.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- User register/login and token-based auth
+- Create trip plans with AI (destination, budget, style, people, dates)
+- View trip list and trip details
+- Auto-attach JWT token on API requests
+- Auto-logout on `401 Unauthorized`
 
-## React Compiler
+## Tech Stack
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- React 19
+- Vite 7
+- React Router 7
+- Axios
+- Tailwind CSS
 
-## Expanding the ESLint configuration
+## Requirements
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+- Node.js 18+ (Node.js 20+ recommended)
+- Backend API running from this repository (`../backend`)
+
+## Setup
+
+1. Install dependencies:
+
+```bash
+npm install
+```
+
+2. Create `.env` in `frontend/`:
+
+```env
+VITE_API_URL=http://localhost:8000
+```
+
+3. Start development server:
+
+```bash
+npm run dev
+```
+
+Default frontend URL: `http://localhost:5173`
+
+## Available Scripts
+
+- `npm run dev` - run dev server
+- `npm run build` - production build
+- `npm run preview` - preview production build
+- `npm run lint` - run ESLint
+
+## Backend Quick Start (from repo root)
+
+```bash
+cd backend
+python -m venv ../venv
+../venv/Scripts/activate
+pip install -r requirements.txt
+```
+
+Create `backend/.env`:
+
+```env
+GEMINI_API_KEY=your_gemini_api_key
+SECRET_KEY=your_secret_key
+ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=1440
+```
+
+Run API:
+
+```bash
+uvicorn main:app --reload --host 0.0.0.0 --port 8000
+```
+
+## Notes
+
+- The backend uses SQLite and auto-creates `backend/travel_planner.db`.
+- CORS allows local frontend origins by default (`localhost:5173`).
+- If AI itinerary generation fails, verify `GEMINI_API_KEY` and backend logs.
