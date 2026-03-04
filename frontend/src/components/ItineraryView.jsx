@@ -8,7 +8,7 @@ const PERIOD_MAP = {
 }
 
 const BUDGET_KEYS = {
-  luu_tru: '🏨 Lưu trú',
+  luu_tru: '🏠 Lưu trú',
   an_uong: '🍜 Ăn uống',
   di_chuyen: '🚗 Di chuyển',
   hoat_dong: '🎯 Hoạt động',
@@ -27,8 +27,8 @@ const BUDGET_KEYS = {
   travel: '🚗 Di chuyển',
   meals: '🍜 Ăn uống',
   dining: '🍜 Ăn uống',
-  lodging: '🏨 Lưu trú',
-  hotel: '🏨 Lưu trú',
+  lodging: '🏠 Lưu trú',
+  hotel: '🏠 Lưu trú',
   sightseeing: '🎯 Tham quan',
   tours: '🎯 Tour & tham quan',
   entrance_fees: '🎫 Vé vào cửa',
