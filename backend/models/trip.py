@@ -13,6 +13,8 @@ class TripCreate(BaseModel):
 class TripUpdate(BaseModel):
     itinerary: Optional[dict] = None
     is_public: Optional[bool] = None
+    days: Optional[int] = None
+    budget: Optional[str] = None 
 
 class TripResponse(BaseModel):
     id: str

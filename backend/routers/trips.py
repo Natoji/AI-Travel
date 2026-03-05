@@ -75,6 +75,10 @@ def update_trip(trip_id: str, update_data: TripUpdate,
         trip.itinerary = json.dumps(update_data.itinerary, ensure_ascii=False)
     if update_data.is_public is not None:
         trip.is_public = update_data.is_public
+    if update_data.days is not None:    
+        trip.days = update_data.days 
+    if update_data.budget is not None:    
+        trip.budget = update_data.budget
     db.commit()
     db.refresh(trip)
     return trip_to_dict(trip)

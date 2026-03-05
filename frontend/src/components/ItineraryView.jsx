@@ -36,6 +36,7 @@ const BUDGET_KEYS = {
 
 export default function ItineraryView({ itinerary }) {
   const [activeDay, setActiveDay] = useState(0)
+
   if (!itinerary) return null
   const { trip_summary, days, accommodation, packing_list, budget_breakdown } = itinerary
 
@@ -43,39 +44,15 @@ export default function ItineraryView({ itinerary }) {
     <div style={{ fontFamily: "'DM Sans', sans-serif" }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Fraunces:ital,wght@0,300;1,300&display=swap');
-        .day-tab {
-          padding: 8px 18px; border-radius: 10px;
-          border: 1.5px solid #e2e8f0; background: white;
-          font-size: 13px; font-weight: 500; color: #64748b;
-          cursor: pointer; transition: all 0.15s; white-space: nowrap;
-          font-family: 'DM Sans', sans-serif;
-        }
+        .day-tab { padding: 8px 18px; border-radius: 10px; border: 1.5px solid #e2e8f0; background: white; font-size: 13px; font-weight: 500; color: #64748b; cursor: pointer; transition: all 0.15s; white-space: nowrap; font-family: 'DM Sans', sans-serif; }
         .day-tab:hover { border-color: #c7d2fe; color: #4f46e5; }
         .day-tab.active { border-color: #6366f1; background: #eef2ff; color: #4f46e5; }
-        .schedule-row {
-          display: grid;
-          grid-template-columns: 56px 1fr 110px;
-          gap: 16px; align-items: flex-start;
-          padding: 18px 0;
-          border-bottom: 1px solid #f1f5f9;
-        }
+        .schedule-row { display: grid; grid-template-columns: 56px 1fr 110px; gap: 16px; align-items: flex-start; padding: 18px 0; border-bottom: 1px solid #f1f5f9; }
         .schedule-row:last-child { border-bottom: none; }
-        .hotel-card {
-          border: 1px solid #f1f5f9; border-radius: 14px;
-          padding: 16px 20px; transition: all 0.2s; background: white;
-        }
+        .hotel-card { border: 1px solid #f1f5f9; border-radius: 14px; padding: 16px 20px; transition: all 0.2s; background: white; }
         .hotel-card:hover { border-color: #e0e7ff; box-shadow: 0 4px 16px rgba(99,102,241,0.06); }
-        .pack-chip {
-          display: inline-flex; align-items: center; gap: 6px;
-          background: #f8fafc; border: 1px solid #f1f5f9;
-          border-radius: 8px; padding: 6px 12px;
-          font-size: 13px; color: #475569;
-        }
-        .budget-row {
-          display: flex; justify-content: space-between;
-          align-items: flex-start; gap: 12px;
-          padding: 12px 0; border-bottom: 1px solid #f8fafc;
-        }
+        .pack-chip { display: inline-flex; align-items: center; gap: 6px; background: #f8fafc; border: 1px solid #f1f5f9; border-radius: 8px; padding: 6px 12px; font-size: 13px; color: #475569; }
+        .budget-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; padding: 12px 0; border-bottom: 1px solid #f8fafc; }
         .budget-row:last-child { border-bottom: none; }
         @media (max-width: 768px) {
           .schedule-row { grid-template-columns: 48px 1fr !important; }
@@ -147,7 +124,6 @@ export default function ItineraryView({ itinerary }) {
                     </div>
                     <div style={{ fontSize: 13, color: '#94a3b8', marginBottom: 6 }}>📍 {item.address}</div>
                     <div style={{ fontSize: 14, color: '#475569', lineHeight: 1.6 }}>{item.description}</div>
-                    {/* Hiện chi phí trên mobile (vì cột phải bị ẩn) */}
                     <div style={{ fontSize: 13, fontWeight: 600, color: '#16a34a', marginTop: 6, display: 'none' }} className="mobile-cost">
                       💰 {item.estimated_cost} · ⏱ {item.duration}
                     </div>
