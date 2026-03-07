@@ -9,6 +9,27 @@ import json
 
 router = APIRouter(prefix='/trips', tags=['trips'])
 
+
+def _parse_trip_id(trip_id: str) -> int:
+    try:
+        return int(trip_id)
+    except (TypeError, ValueError):
+        raise HTTPException(status_code=400, detail='Trip ID khong hop le')
+
+
+def _get_trip_or_404(db: Session, trip_id: int):
+    trip = db.query(Trip).filter(Trip.id == trip_id).first()
+    if not trip:
+        raise HTTPException(status_code=404, detail='Khong tim thay')
+    return trip
+
+
+def _get_owned_trip_or_403(db: Session, trip_id: int, current_user):
+    trip = _get_trip_or_404(db, trip_id)
+    if trip.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail='Khong co quyen')
+    return trip
+
 def trip_to_dict(trip) -> dict:
     return {
         'id': str(trip.id),
@@ -57,20 +78,16 @@ def get_my_trips(db: Session = Depends(get_db),
 @router.get('/{trip_id}')
 def get_trip(trip_id: str, db: Session = Depends(get_db),
             current_user = Depends(get_current_user)):
-    trip = db.query(Trip).filter(Trip.id == int(trip_id)).first()
-    if not trip:
-        raise HTTPException(status_code=404, detail='Khong tim thay')
+    parsed_trip_id = _parse_trip_id(trip_id)
+    trip = _get_trip_or_404(db, parsed_trip_id)
     return trip_to_dict(trip)
 
 @router.put('/{trip_id}')
 def update_trip(trip_id: str, update_data: TripUpdate,
                 db: Session = Depends(get_db),
                 current_user = Depends(get_current_user)):
-    trip = db.query(Trip).filter(Trip.id == int(trip_id)).first()
-    if not trip:
-        raise HTTPException(status_code=404, detail='Khong tim thay')
-    if trip.user_id != current_user.id:
-        raise HTTPException(status_code=403, detail='Khong co quyen')
+    parsed_trip_id = _parse_trip_id(trip_id)
+    trip = _get_owned_trip_or_403(db, parsed_trip_id, current_user)
     if update_data.itinerary:
         trip.itinerary = json.dumps(update_data.itinerary, ensure_ascii=False)
     if update_data.is_public is not None:
@@ -86,11 +103,8 @@ def update_trip(trip_id: str, update_data: TripUpdate,
 @router.delete('/{trip_id}')
 def delete_trip(trip_id: str, db: Session = Depends(get_db),
                 current_user = Depends(get_current_user)):
-    trip = db.query(Trip).filter(Trip.id == int(trip_id)).first()
-    if not trip:
-        raise HTTPException(status_code=404, detail='Khong tim thay')
-    if trip.user_id != current_user.id:
-        raise HTTPException(status_code=403, detail='Khong co quyen')
+    parsed_trip_id = _parse_trip_id(trip_id)
+    trip = _get_owned_trip_or_403(db, parsed_trip_id, current_user)
     db.delete(trip)
     db.commit()
     return {'message': 'Da xoa thanh cong'}

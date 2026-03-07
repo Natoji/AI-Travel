@@ -1,96 +1,95 @@
-// src/components/home/HeroSection.jsx
-import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+﻿import { Link } from 'react-router-dom'
 import AnimatedBackground from './AnimatedBackground'
+import heroPhotoLeft from '../../assets/hero-onboarding/photo-left.jpg'
+import heroPhotoRight from '../../assets/hero-onboarding/photo-right.jpg'
 
-const previewImageModules = import.meta.glob('../../assets/home-preview/*.{jpg,jpeg,png,webp,svg}', { eager: true, import: 'default' })
-const previewImages = Object.values(previewImageModules)
+const heroAssetModules = import.meta.glob('../../assets/hero-onboarding/*.{png,webp,svg}', { eager: true, import: 'default' })
+const heroAssetEntries = Object.entries(heroAssetModules).map(([path, src]) => ({ path: path.toLowerCase(), src }))
+
+function pickAsset(keywords) {
+  const match = heroAssetEntries.find((asset) => keywords.every((k) => asset.path.includes(k)))
+  return match?.src
+}
+
+const heroAssets = {
+  logo: pickAsset(['logo']),
+  cloud: pickAsset(['cloud']),
+  pin: pickAsset(['pin']),
+  plane: pickAsset(['plane']),
+  magnifier: pickAsset(['magnifier']) || pickAsset(['ring']),
+  paperclip: pickAsset(['paperclip']) || pickAsset(['clip']),
+  dashPath: pickAsset(['dash']) || pickAsset(['path']),
+}
 
 export default function HeroSection({ user }) {
-  const [activePreviewIndex, setActivePreviewIndex] = useState(0)
-
-  useEffect(() => {
-    if (previewImages.length <= 1) return
-    const timer = setInterval(() => {
-      setActivePreviewIndex((prev) => (prev + 1) % previewImages.length)
-    }, 3500)
-    return () => clearInterval(timer)
-  }, [])
+  const firstImage = heroPhotoLeft
+  const secondImage = heroPhotoRight
 
   return (
-    <section className="hero-bg">
+    <section className="hero-bg hero-onboarding">
       <div className="hero-bg-pattern" />
       <AnimatedBackground />
-      <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 24px', width: '100%', position: 'relative', zIndex: 2 }}>
-        <div className="hero-grid" style={{ display: 'grid', gridTemplateColumns: '1.05fr 0.95fr', gap: 80, alignItems: 'center' }}>
-
-          {/* Left */}
+      <div className="hero-shell">
+        <div className="hero-grid hero-onboarding-grid">
           <div>
-            <div className="badge"><span>✨</span> Trải nghiệm du lịch kỷ nguyên AI</div>
+            <div className="badge"><span>☁️</span> Trải nghiệm du lịch kỷ nguyên AI</div>
             <h1 className="hero-title">
-              Du lịch thông minh<br />
-              với <em>trợ lý AI</em><br />
-              của riêng bạn
+              {'Khám phá hành\u00A0trình'}<br />
+              với <em>AI Travel</em><br />
+              theo phong cách của bạn
             </h1>
-            <p style={{ fontSize: 18, color: '#64748b', lineHeight: 1.6, marginBottom: 44, maxWidth: 540 }}>
-              Lên kế hoạch cho chuyến đi mơ ước chỉ trong vài giây. Chính xác, tiết kiệm và hoàn toàn miễn phí.
+            <p className="hero-lead">
+              Nhập điểm đến và ngân sách, nhận lịch trình gọn đẹp chỉ trong vài giây.
+              Mọi thứ được tối ưu để bạn chỉ cần xách balo lên và đi.
             </p>
-            <div className="btn-group" style={{ display: 'flex', gap: 16, marginBottom: 48, flexWrap: 'wrap' }}>
-              <Link to={user ? '/dashboard' : '/register'} className="btn-primary">
-                Bắt đầu miễn phí →
-              </Link>
-              {!user && (
-                <Link to="/login" style={{ padding: '16px 32px', borderRadius: 14, textDecoration: 'none', color: '#0f172a', fontWeight: 600, border: '2px solid #e2e8f0', display: 'inline-block', background: 'rgba(255,255,255,0.8)' }}>
-                  Đăng nhập
-                </Link>
-              )}
+
+            <div className="hero-chips">
+              {['Điểm đến theo sở thích', 'Không cần thẻ tín dụng', 'Xem trước lộ trình ngay'].map((item, idx) => (
+                <span key={idx} className="hero-chip">
+                  {item}
+                </span>
+              ))}
             </div>
-            <div className="hero-stats" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
+
+            <div className="btn-group hero-actions">
+              <Link to={user ? '/dashboard' : '/register'} className="btn-primary">
+                Bắt đầu ngay →
+              </Link>
+              <a href="#how-it-works" className="hero-link hero-cta-link">
+                Xem cách hoạt động
+              </a>
+            </div>
+
+            <div className="hero-stats">
               {[
-                { value: '30s', label: 'Lập lịch trình' },
-                { value: '+120', label: 'Điểm đến VN' },
-                { value: '24/7', label: 'Hỗ trợ tức thì' },
+                { value: '30s', label: 'Có lịch trình đầu tiên' },
+                { value: '100%', label: 'Miễn phí khi bắt đầu' },
+                { value: 'AI', label: 'Gợi ý theo nhu cầu' },
               ].map((s, i) => (
                 <div key={i} className="hero-stat">
-                  <div style={{ fontSize: 24, fontWeight: 800, color: '#4f46e5' }}>{s.value}</div>
-                  <div style={{ fontSize: 13, color: '#94a3b8', marginTop: 4 }}>{s.label}</div>
+                  <div className="hero-stat-value">{s.value}</div>
+                  <div className="hero-stat-label">{s.label}</div>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Right - Preview */}
-          <div className="preview-card-container" style={{ position: 'relative' }}>
-            <div className="floating-label" style={{ top: -20, left: -20, animationDelay: '0s' }}>
-              <span style={{ fontSize: 20 }}>🧭</span> Lộ trình thông minh
+          <div className="hero-scene">
+            {heroAssets.logo ? <img className="scene-logo" src={heroAssets.logo} alt="" aria-hidden="true" loading="eager" fetchPriority="high" decoding="async" /> : <div className="scene-logo-text">AI Travel</div>}
+            {heroAssets.dashPath && <img className="scene-dash" src={heroAssets.dashPath} alt="" aria-hidden="true" loading="lazy" decoding="async" />}
+            {heroAssets.cloud && <img className="scene-cloud-overlay" src={heroAssets.cloud} alt="" aria-hidden="true" loading="lazy" decoding="async" />}
+
+            <div className="scene-stamp stamp-a">
+              {firstImage ? <img src={firstImage} alt="" aria-hidden="true" loading="eager" fetchPriority="high" decoding="async" /> : <span aria-hidden="true">🏕️</span>}
             </div>
-            <div className="floating-label" style={{ bottom: 20, right: -30, animationDelay: '1s' }}>
-              <span style={{ fontSize: 20 }}>💎</span> Tiết kiệm chi phí
+            <div className="scene-stamp stamp-b">
+              {secondImage ? <img src={secondImage} alt="" aria-hidden="true" loading="eager" fetchPriority="high" decoding="async" /> : <span aria-hidden="true">🌊</span>}
             </div>
-            <div className="preview-card">
-              <div style={{ position: 'relative', borderRadius: 20, overflow: 'hidden', aspectRatio: '16/11', background: '#f8fafc' }}>
-                {previewImages.length > 0 ? (
-                  previewImages.map((src, index) => (
-                    <img key={index} src={src} alt="Travel"
-                      style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: index === activePreviewIndex ? 1 : 0, transition: 'opacity 0.8s ease' }} />
-                  ))
-                ) : (
-                  <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, #eef2ff, #f5f3ff)', gap: 12 }}>
-                    <div style={{ fontSize: 64 }}>✈️</div>
-                    <div style={{ fontSize: 16, fontWeight: 600, color: '#6366f1' }}>AI Travel Planner</div>
-                    <div style={{ fontSize: 13, color: '#94a3b8' }}>Thêm ảnh vào src/assets/home-preview/</div>
-                  </div>
-                )}
-                {previewImages.length > 1 && (
-                  <div style={{ position: 'absolute', bottom: 12, left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: 6 }}>
-                    {previewImages.map((_, i) => (
-                      <div key={i} onClick={() => setActivePreviewIndex(i)}
-                        style={{ width: i === activePreviewIndex ? 20 : 8, height: 8, borderRadius: 999, background: i === activePreviewIndex ? 'white' : 'rgba(255,255,255,0.5)', transition: 'all 0.3s', cursor: 'pointer' }} />
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
+
+            {heroAssets.pin ? <img className="scene-pin-img" src={heroAssets.pin} alt="" aria-hidden="true" loading="lazy" decoding="async" /> : <div className="scene-pin" aria-hidden="true">📍</div>}
+            {heroAssets.plane ? <img className="scene-plane-img" src={heroAssets.plane} alt="" aria-hidden="true" loading="lazy" decoding="async" /> : <div className="scene-plane" aria-hidden="true">✈️</div>}
+            {heroAssets.magnifier ? <img className="scene-ring-img" src={heroAssets.magnifier} alt="" aria-hidden="true" loading="lazy" decoding="async" /> : <div className="scene-ring" aria-hidden="true">🔎</div>}
+            {heroAssets.paperclip && <img className="scene-paperclip-img" src={heroAssets.paperclip} alt="" aria-hidden="true" loading="lazy" decoding="async" />}
           </div>
         </div>
       </div>

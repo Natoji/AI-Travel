@@ -1,3 +1,21 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Fraunces:ital,wght@0,300;0,600;1,300&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+:root {
+  --brand-primary: #3d4cc0;
+  --brand-primary-2: #6366f1;
+  --text-strong: #0f172a;
+  --text-muted: #4b6479;
+  --surface-card: rgba(255, 255, 255, 0.82);
+  --border-soft: rgba(224, 236, 248, 0.95);
+  --home-sky: #8fd2ff;
+}
+
+body {
+  margin: 0;
+  font-family: 'DM Sans', sans-serif;
+  color: var(--text-strong);
+}

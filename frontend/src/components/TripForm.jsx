@@ -22,6 +22,10 @@ const BUDGET_PRESETS = [
   { label: 'Thoải mái', value: '6000000', desc: '~6 triệu' },
 ]
 
+const CREATE_TRIP_TIMEOUT_MS = 120000
+const RECOVERY_POLL_RETRIES = 5
+const RECOVERY_POLL_INTERVAL_MS = 2000
+
 function calcDays(start, end) {
   if (!start || !end) return 0
   const diff = new Date(end) - new Date(start)
@@ -36,6 +40,31 @@ function formatDate(dateStr) {
 
 function today() {
   return new Date().toISOString().split('T')[0]
+}
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+function isTimeoutError(err) {
+  return err?.code === 'ECONNABORTED' || /timeout/i.test(err?.message || '')
+}
+
+function shouldAttemptRecovery(err) {
+  if (isTimeoutError(err)) return true
+  if (!err?.response) return true
+  const status = Number(err.response.status)
+  return status >= 500 || status === 408 || status === 429
+}
+
+function extractErrorMessage(err) {
+  const detail = err?.response?.data?.detail
+  if (typeof detail === 'string' && detail.trim()) return detail
+  if (detail && typeof detail === 'object') {
+    if (typeof detail.message === 'string' && detail.message.trim()) return detail.message
+    if (typeof detail.error === 'string' && detail.error.trim()) return detail.error
+  }
+  return ''
 }
 
 // editTrip: { id, destination, departure_city, days, budget, travel_style }
@@ -85,26 +114,74 @@ export default function TripForm({ onTripCreated, editTrip }) {
     })
   }
 
+  const findRecoveredTrip = async (payload, startedAt) => {
+    const fromTime = startedAt - 15000
+    const normDestination = payload.destination.trim().toLowerCase()
+
+    for (let i = 0; i < RECOVERY_POLL_RETRIES; i++) {
+      const listRes = await api.get('/trips/my-trips', { timeout: 10000 })
+      const trips = listRes.data || []
+      const strictCandidates = trips
+        .filter((trip) => {
+          const createdAt = Date.parse(trip.created_at)
+          if (Number.isNaN(createdAt) || createdAt < fromTime) return false
+          return (
+            String(trip.destination || '').trim().toLowerCase() === normDestination &&
+            Number(trip.days) === Number(payload.days) &&
+            String(trip.budget) === String(payload.budget)
+          )
+        })
+        .sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at))
+
+      if (strictCandidates.length > 0) return strictCandidates[0]
+
+      // Fallback nhe: mot so backend co the chuan hoa budget, van uu tien destination + created_at
+      const relaxedCandidates = trips
+        .filter((trip) => {
+          const createdAt = Date.parse(trip.created_at)
+          if (Number.isNaN(createdAt) || createdAt < fromTime) return false
+          return String(trip.destination || '').trim().toLowerCase() === normDestination
+        })
+        .sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at))
+
+      if (relaxedCandidates.length > 0) return relaxedCandidates[0]
+      if (i < RECOVERY_POLL_RETRIES - 1) await sleep(RECOVERY_POLL_INTERVAL_MS)
+    }
+
+    return null
+  }
+
+  const createTripWithRecovery = async (payload, startedAt) => {
+    try {
+      return await api.post('/trips/', payload, { timeout: CREATE_TRIP_TIMEOUT_MS })
+    } catch (err) {
+      if (!shouldAttemptRecovery(err)) throw err
+      const recovered = await findRecoveredTrip(payload, startedAt)
+      if (recovered) return { data: recovered }
+      throw err
+    }
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (!form.departure_city) { setError('Vui lòng nhập thành phố xuất phát'); return }
     if (form.travel_style.length === 0) { setError('Vui lòng chọn ít nhất 1 phong cách'); return }
     if (days < 1) { setError('Ngày về phải sau ngày đi'); return }
+    const payload = {
+      destination: form.destination,
+      departure_city: form.departure_city,
+      days: days,
+      budget: form.budget,
+      travel_style: form.travel_style,
+      people: form.people,
+    }
+    const startedAt = Date.now()
     setLoading(true); setError('')
     try {
-      const payload = {
-        destination: form.destination,
-        departure_city: form.departure_city,
-        days: days,
-        budget: form.budget,
-        travel_style: form.travel_style,
-        people: form.people,
-      }
-
       let res
       if (isEdit) {
         // Gọi POST để generate lịch trình mới, rồi PUT đè lên trip cũ
-        const generated = await api.post('/trips/', payload)
+        const generated = await createTripWithRecovery(payload, startedAt)
         console.log('Generated trip:', generated.data)
         res = await api.put(`/trips/${editTrip.id}`, {
           itinerary: generated.data.itinerary,
@@ -114,13 +191,36 @@ export default function TripForm({ onTripCreated, editTrip }) {
         console.log('Updated trip:', res.data)
         // Xóa trip mới vừa tạo (chỉ dùng để lấy itinerary)
         await api.delete(`/trips/${generated.data.id}`)
-        onTripCreated(res.data)
+        if (typeof onTripCreated === 'function') {
+          try {
+            onTripCreated(res.data)
+          } catch (callbackError) {
+            console.error('onTripCreated failed after successful update:', callbackError)
+            setError('Lịch trình đã cập nhật nhưng chưa hiển thị tự động. Vui lòng tải lại trang.')
+          }
+        }
       } else {
-        res = await api.post('/trips/', payload)
-        onTripCreated(res.data)
+        res = await createTripWithRecovery(payload, startedAt)
+        if (typeof onTripCreated === 'function') {
+          try {
+            onTripCreated(res.data)
+          } catch (callbackError) {
+            console.error('onTripCreated failed after successful create:', callbackError)
+            const createdId = res?.data?.id
+            if (createdId) {
+              window.location.assign(`/trips/${createdId}`)
+              return
+            }
+            setError('Lịch trình đã tạo nhưng chưa mở tự động. Vui lòng tải lại trang.')
+          }
+        }
       }
     } catch (err) {
-      setError(err.response?.data?.detail || 'Có lỗi xảy ra, thử lại nhé!')
+      if (isTimeoutError(err)) {
+        setError('Hệ thống xử lý lâu hơn dự kiến. Nếu trip đã tạo xong, nó sẽ xuất hiện sau khi tải lại trang.')
+        return
+      }
+      setError(extractErrorMessage(err) || 'Có lỗi xảy ra, thử lại nhé!')
     } finally { setLoading(false) }
   }
 

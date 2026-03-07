@@ -6,6 +6,11 @@ class Settings(BaseSettings):
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 1440
 
+    # Tool API keys (để trống = dùng mock data)
+    openweather_api_key: str = ""
+    goong_api_key: str = ""
+    exchangerate_api_key: str = ""
+
     class Config:
         env_file = ".env"
 
