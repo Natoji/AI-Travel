@@ -1,18 +1,19 @@
 # AI Travel Planner
 
-Ứng dụng lập kế hoạch du lịch bằng AI gồm:
+Ứng dụng lập kế hoạch du lịch bằng AI, gồm:
 - `frontend`: React + Vite
 - `backend`: FastAPI + SQLite + Gemini API
 
 ## Tính năng chính
 
-- Đăng ký/đăng nhập bằng JWT
+- Đăng ký / đăng nhập bằng JWT.
 - Tạo lịch trình du lịch bằng AI theo:
-  - điểm đi, điểm đến
-  - số ngày, số người
-  - ngân sách
-  - phong cách du lịch
-- Xem danh sách chuyến đi và chi tiết lịch trình
+  - Điểm đến
+  - Số ngày, số người
+  - Ngân sách
+  - Phong cách du lịch
+- Xem danh sách chuyến đi và chi tiết lịch trình.
+- Chỉnh sửa thông tin chuyến đi và tạo lại lịch trình.
 
 ## Cấu trúc thư mục
 
@@ -29,12 +30,30 @@ ai-travel-planner/
 - Python 3.10+
 - Node.js 18+ (khuyến nghị Node.js 20+)
 
-## Thiết lập backend
+## Thiết lập Backend
 
 ```bash
 cd backend
 python -m venv ../venv
-../venv/Scripts/activate
+```
+
+Kích hoạt môi trường ảo:
+
+- Windows PowerShell:
+
+```powershell
+..\venv\Scripts\Activate.ps1
+```
+
+- macOS/Linux:
+
+```bash
+source ../venv/bin/activate
+```
+
+Cài dependencies:
+
+```bash
 pip install -r requirements.txt
 ```
 
@@ -55,7 +74,7 @@ uvicorn main:app --reload --host 0.0.0.0 --port 8000
 
 Backend mặc định chạy tại: `http://localhost:8000`
 
-## Thiết lập frontend
+## Thiết lập Frontend
 
 ```bash
 cd frontend
@@ -76,7 +95,7 @@ npm run dev
 
 Frontend mặc định chạy tại: `http://localhost:5173`
 
-## Script thường dùng
+## Scripts thường dùng
 
 Frontend:
 - `npm run dev`
@@ -89,10 +108,10 @@ Backend:
 
 ## Ghi chú
 
-- Database SQLite sẽ tự tạo tại `backend/travel_planner.db`.
-- CORS backend đã cho phép local frontend (`localhost:5173`) theo mặc định.
+- Database SQLite tự tạo tại `backend/travel_planner.db`.
+- CORS backend cho phép local frontend (`localhost:5173`) theo mặc định.
 - Nếu AI không trả lịch trình, kiểm tra `GEMINI_API_KEY` và log backend.
 
-## README thành phần
+## Tài liệu thêm
 
 - Frontend chi tiết: [frontend/README.md](./frontend/README.md)
