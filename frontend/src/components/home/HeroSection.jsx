@@ -1,29 +1,82 @@
-﻿import { Link } from 'react-router-dom'
+﻿import { useEffect, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
 import AnimatedBackground from './AnimatedBackground'
-import heroPhotoLeft from '../../assets/hero-onboarding/photo-left.jpg'
-import heroPhotoRight from '../../assets/hero-onboarding/photo-right.jpg'
 
-const heroAssetModules = import.meta.glob('../../assets/hero-onboarding/*.{png,webp,svg}', { eager: true, import: 'default' })
-const heroAssetEntries = Object.entries(heroAssetModules).map(([path, src]) => ({ path: path.toLowerCase(), src }))
+const sliderImageModules = import.meta.glob('../../assets/hero-slider/*.{jpg,jpeg,png,webp,avif}', {
+  eager: true,
+  import: 'default',
+})
 
-function pickAsset(keywords) {
-  const match = heroAssetEntries.find((asset) => keywords.every((k) => asset.path.includes(k)))
-  return match?.src
-}
-
-const heroAssets = {
-  logo: pickAsset(['logo']),
-  cloud: pickAsset(['cloud']),
-  pin: pickAsset(['pin']),
-  plane: pickAsset(['plane']),
-  magnifier: pickAsset(['magnifier']) || pickAsset(['ring']),
-  paperclip: pickAsset(['paperclip']) || pickAsset(['clip']),
-  dashPath: pickAsset(['dash']) || pickAsset(['path']),
-}
+const desktopCarouselImages = Object.entries(sliderImageModules)
+  .sort(([pathA], [pathB]) => pathA.localeCompare(pathB))
+  .map(([, src]) => src)
 
 export default function HeroSection({ user }) {
-  const firstImage = heroPhotoLeft
-  const secondImage = heroPhotoRight
+  const [activeDesktopSlide, setActiveDesktopSlide] = useState(0)
+  const frameRef = useRef(null)
+  const rafRef = useRef(0)
+  const pointerRef = useRef({ x: 0, y: 0 })
+
+  useEffect(() => {
+    if (desktopCarouselImages.length <= 1) {
+      setActiveDesktopSlide(0)
+      return undefined
+    }
+
+    const timer = window.setInterval(() => {
+      setActiveDesktopSlide((prev) => (prev + 1) % desktopCarouselImages.length)
+    }, 4000)
+
+    return () => window.clearInterval(timer)
+  }, [])
+
+  useEffect(() => {
+    return () => {
+      if (rafRef.current) {
+        window.cancelAnimationFrame(rafRef.current)
+      }
+    }
+  }, [])
+
+  function updateFrameTilt(clientX, clientY) {
+    const frame = frameRef.current
+    if (!frame) return
+
+    const rect = frame.getBoundingClientRect()
+    if (!rect.width || !rect.height) return
+
+    const relativeX = Math.min(Math.max((clientX - rect.left) / rect.width, 0), 1)
+    const relativeY = Math.min(Math.max((clientY - rect.top) / rect.height, 0), 1)
+    const tiltX = (0.5 - relativeY) * 7
+    const tiltY = (relativeX - 0.5) * 9
+
+    frame.style.setProperty('--tilt-x', `${tiltX.toFixed(2)}deg`)
+    frame.style.setProperty('--tilt-y', `${tiltY.toFixed(2)}deg`)
+    frame.style.setProperty('--glare-x', `${(relativeX * 100).toFixed(1)}%`)
+    frame.style.setProperty('--glare-y', `${(relativeY * 100).toFixed(1)}%`)
+  }
+
+  function handleFramePointerMove(event) {
+    pointerRef.current.x = event.clientX
+    pointerRef.current.y = event.clientY
+
+    if (rafRef.current) return
+
+    rafRef.current = window.requestAnimationFrame(() => {
+      rafRef.current = 0
+      updateFrameTilt(pointerRef.current.x, pointerRef.current.y)
+    })
+  }
+
+  function handleFramePointerLeave() {
+    const frame = frameRef.current
+    if (!frame) return
+
+    frame.style.setProperty('--tilt-x', '0deg')
+    frame.style.setProperty('--tilt-y', '0deg')
+    frame.style.setProperty('--glare-x', '50%')
+    frame.style.setProperty('--glare-y', '35%')
+  }
 
   return (
     <section className="hero-bg hero-onboarding">
@@ -31,12 +84,10 @@ export default function HeroSection({ user }) {
       <AnimatedBackground />
       <div className="hero-shell">
         <div className="hero-grid hero-onboarding-grid">
-          <div>
+          <div className="hero-copy">
             <div className="badge"><span>☁️</span> Trải nghiệm du lịch kỷ nguyên AI</div>
             <h1 className="hero-title">
-              {'Khám phá hành\u00A0trình'}<br />
-              với <em>AI Travel</em><br />
-              theo phong cách của bạn
+              {'Lên lịch trình du lịch với '}<em>AI Travel</em>
             </h1>
             <p className="hero-lead">
               Nhập điểm đến và ngân sách, nhận lịch trình gọn đẹp chỉ trong vài giây.
@@ -74,22 +125,31 @@ export default function HeroSection({ user }) {
             </div>
           </div>
 
-          <div className="hero-scene">
-            {heroAssets.logo ? <img className="scene-logo" src={heroAssets.logo} alt="" aria-hidden="true" loading="eager" fetchPriority="high" decoding="async" /> : <div className="scene-logo-text">AI Travel</div>}
-            {heroAssets.dashPath && <img className="scene-dash" src={heroAssets.dashPath} alt="" aria-hidden="true" loading="lazy" decoding="async" />}
-            {heroAssets.cloud && <img className="scene-cloud-overlay" src={heroAssets.cloud} alt="" aria-hidden="true" loading="lazy" decoding="async" />}
-
-            <div className="scene-stamp stamp-a">
-              {firstImage ? <img src={firstImage} alt="" aria-hidden="true" loading="eager" fetchPriority="high" decoding="async" /> : <span aria-hidden="true">🏕️</span>}
+          <div className="hero-scene" aria-hidden="true">
+            <div
+              ref={frameRef}
+              className="hero-frame-carousel"
+              onMouseMove={handleFramePointerMove}
+              onMouseLeave={handleFramePointerLeave}
+            >
+              <div className="hero-frame-window">
+                {desktopCarouselImages.length > 0 ? (
+                  desktopCarouselImages.map((imageSrc, idx) => (
+                    <img
+                      key={`${imageSrc}-${idx}`}
+                      src={imageSrc}
+                      alt=""
+                      loading={idx === 0 ? 'eager' : 'lazy'}
+                      fetchPriority={idx === 0 ? 'high' : undefined}
+                      decoding="async"
+                      className={`hero-frame-slide${idx === activeDesktopSlide ? ' is-active' : ''}`}
+                    />
+                  ))
+                ) : (
+                  <div className="hero-frame-empty">Thêm ảnh vào thư mục src/assets/hero-slider</div>
+                )}
+              </div>
             </div>
-            <div className="scene-stamp stamp-b">
-              {secondImage ? <img src={secondImage} alt="" aria-hidden="true" loading="eager" fetchPriority="high" decoding="async" /> : <span aria-hidden="true">🌊</span>}
-            </div>
-
-            {heroAssets.pin ? <img className="scene-pin-img" src={heroAssets.pin} alt="" aria-hidden="true" loading="lazy" decoding="async" /> : <div className="scene-pin" aria-hidden="true">📍</div>}
-            {heroAssets.plane ? <img className="scene-plane-img" src={heroAssets.plane} alt="" aria-hidden="true" loading="lazy" decoding="async" /> : <div className="scene-plane" aria-hidden="true">✈️</div>}
-            {heroAssets.magnifier ? <img className="scene-ring-img" src={heroAssets.magnifier} alt="" aria-hidden="true" loading="lazy" decoding="async" /> : <div className="scene-ring" aria-hidden="true">🔎</div>}
-            {heroAssets.paperclip && <img className="scene-paperclip-img" src={heroAssets.paperclip} alt="" aria-hidden="true" loading="lazy" decoding="async" />}
           </div>
         </div>
       </div>
