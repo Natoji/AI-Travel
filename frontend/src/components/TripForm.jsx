@@ -1,4 +1,4 @@
-﻿import { useState } from 'react'
+﻿import { useEffect, useState } from 'react'
 import api from '../services/api'
 
 const STYLES = [
@@ -93,8 +93,44 @@ export default function TripForm({ onTripCreated, editTrip }) {
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [destinationSuggestions, setDestinationSuggestions] = useState([])
+  const [departureSuggestions, setDepartureSuggestions] = useState([])
 
   const days = calcDays(form.start_date, form.end_date)
+
+  useEffect(() => {
+    const q = String(form.destination || '').trim()
+    if (q.length < 2) {
+      setDestinationSuggestions([])
+      return
+    }
+    const timer = setTimeout(async () => {
+      try {
+        const res = await api.get('/maps/autocomplete', { params: { q, limit: 6 } })
+        setDestinationSuggestions((res.data?.suggestions || []).slice(0, 6))
+      } catch {
+        setDestinationSuggestions([])
+      }
+    }, 220)
+    return () => clearTimeout(timer)
+  }, [form.destination])
+
+  useEffect(() => {
+    const q = String(form.departure_city || '').trim()
+    if (q.length < 2) {
+      setDepartureSuggestions([])
+      return
+    }
+    const timer = setTimeout(async () => {
+      try {
+        const res = await api.get('/maps/autocomplete', { params: { q, limit: 6 } })
+        setDepartureSuggestions((res.data?.suggestions || []).slice(0, 6))
+      } catch {
+        setDepartureSuggestions([])
+      }
+    }, 220)
+    return () => clearTimeout(timer)
+  }, [form.departure_city])
 
   const toggleStyle = (style) => {
     setForm(prev => ({
@@ -347,14 +383,26 @@ export default function TripForm({ onTripCreated, editTrip }) {
               <input value={form.departure_city}
                 onChange={e => setForm({ ...form, departure_city: e.target.value })}
                 placeholder="Nhập tỉnh/thành phố..."
+                list="departure-city-suggestions"
                 className="form-input" required />
+              <datalist id="departure-city-suggestions">
+                {departureSuggestions.map((s) => (
+                  <option key={`${s.place_id || s.description}-${s.main_text || ''}`} value={s.description || s.main_text || ''} />
+                ))}
+              </datalist>
             </div>
             <div>
               <label className="form-label">📍 Điểm đến</label>
               <input value={form.destination}
                 onChange={e => setForm({ ...form, destination: e.target.value })}
                 placeholder="Đà Nẵng, Hội An, Phú Quốc..."
+                list="destination-suggestions"
                 className="form-input" required />
+              <datalist id="destination-suggestions">
+                {destinationSuggestions.map((s) => (
+                  <option key={`${s.place_id || s.description}-${s.main_text || ''}`} value={s.description || s.main_text || ''} />
+                ))}
+              </datalist>
             </div>
           </div>
 
@@ -455,3 +503,4 @@ export default function TripForm({ onTripCreated, editTrip }) {
     </div>
   )
 }
+

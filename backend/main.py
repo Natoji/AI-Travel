@@ -3,7 +3,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from routers import auth, trips
+from routers import auth, maps, trips
 from database import create_tables
 
 app = FastAPI(
@@ -33,6 +33,7 @@ app.add_middleware(
 
 app.include_router(auth.router)
 app.include_router(trips.router)
+app.include_router(maps.router)
 
 
 @app.on_event('startup')

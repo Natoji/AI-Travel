@@ -11,6 +11,7 @@ import json
 import re
 import requests
 from config import settings
+from services.route_optimizer import optimize_itinerary_routes
 
 try:
     from google import genai
@@ -175,6 +176,57 @@ def _get_top_places(city: str, category: str, limit: int = 5) -> dict:
     except Exception as e:
         return {"city": city, "category": category, "error": str(e),
                 "places": [], "source": "error"}
+
+
+def _estimate_price_range_from_budget(budget: str) -> str:
+    try:
+        b = int(str(budget).replace(",", "").strip())
+    except Exception:
+        b = 0
+    if b <= 2000000:
+        return "400k-900k/đêm"
+    if b <= 4500000:
+        return "800k-1.8tr/đêm"
+    return "1.5-4tr/đêm"
+
+
+def _augment_accommodation_suggestions(itinerary: dict, destination: str, budget: str) -> dict:
+    acc = itinerary.get("accommodation")
+    if not isinstance(acc, list):
+        acc = []
+    existing_names = {str((h or {}).get("name", "")).strip().lower() for h in acc}
+
+    target_count = 5
+    need = max(0, target_count - len(acc))
+    if need == 0:
+        itinerary["accommodation"] = acc
+        return itinerary
+
+    hotel_candidates = _get_top_places(destination, "hotel", max(need + 2, 6))
+    places = (hotel_candidates or {}).get("places") or []
+    added = 0
+    for p in places:
+        name = str(p.get("name", "")).strip()
+        if not name:
+            continue
+        key = name.lower()
+        if key in existing_names:
+            continue
+        acc.append({
+            "name": name,
+            "area": p.get("address") or destination,
+            "price_range": _estimate_price_range_from_budget(budget),
+            "why": "Vị trí thuận tiện, đánh giá tốt từ dữ liệu địa điểm.",
+            "lat": p.get("lat"),
+            "lng": p.get("lng"),
+        })
+        existing_names.add(key)
+        added += 1
+        if added >= need:
+            break
+
+    itinerary["accommodation"] = acc
+    return itinerary
 
 
 def _get_exchange_rate(from_currency: str, to_currency: str) -> dict:
@@ -404,8 +456,11 @@ KHÔNG gộp 2 địa điểm vào 1 dòng address (không ghi "A đi B")
   "agent_notes": "..."
 }}"""
 
-    return _run_agent_new_sdk(system_prompt, user_prompt) if _USE_NEW_SDK \
+    itinerary = _run_agent_new_sdk(system_prompt, user_prompt) if _USE_NEW_SDK \
         else _run_agent_old_sdk(system_prompt, user_prompt)
+    itinerary = optimize_itinerary_routes(itinerary)
+    itinerary = _augment_accommodation_suggestions(itinerary, destination, budget)
+    return itinerary
 
 
 def _run_agent_new_sdk(system_prompt: str, user_prompt: str) -> dict:

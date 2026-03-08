@@ -5,13 +5,18 @@
 @tailwind utilities;
 
 :root {
-  --brand-primary: #3d4cc0;
-  --brand-primary-2: #6366f1;
+  --brand-primary: #1f5fa8;
+  --brand-primary-2: #2a86d1;
+  --brand-accent: #18a999;
+  --brand-deep: #0f3d66;
   --text-strong: #0f172a;
   --text-muted: #4b6479;
   --surface-card: rgba(255, 255, 255, 0.82);
   --border-soft: rgba(224, 236, 248, 0.95);
-  --home-sky: #8fd2ff;
+  --home-sky: #a9dfff;
+  --home-sky-top: #4ab5f4;
+  --home-sky-mid: #7bc8f7;
+  --home-sky-bottom: #d5efff;
 }
 
 body {
