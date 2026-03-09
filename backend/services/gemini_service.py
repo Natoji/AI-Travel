@@ -340,7 +340,8 @@ TOOL_DECLARATIONS = [
 
 def generate_itinerary(destination: str, days: int, budget: str,
                        travel_style: list, people: int,
-                       departure_city: str = "") -> dict:
+                       departure_city: str = "",
+                       planner_context: str = "") -> dict:
     system_prompt = """Bạn là AI Travel Agent chuyên nghiệp.
 PHẢI dùng tools trước khi tạo lịch trình:
   - get_weather_forecast: thời tiết thực tế tại điểm đến
@@ -368,6 +369,17 @@ TUYỆT ĐỐI KHÔNG viết tips chung chung như "địa điểm đẹp nên g
     # Tính số địa điểm cần thiết: mỗi ngày ~3-4 điểm tham quan, ~2-3 nhà hàng
     places_needed = max(10, days * 4)
 
+    context_block = ""
+    if planner_context and planner_context.strip():
+        context_block = f"""
+ADDITIONAL MEMORY + KNOWLEDGE CONTEXT:
+{planner_context.strip()}
+
+Apply this context as soft constraints:
+- Reuse user preferences when possible.
+- If memory conflicts with live tool data, prioritize live tool data.
+"""
+
     user_prompt = f"""Lên kế hoạch du lịch:
 - Xuất phát: {departure_city or 'Hà Nội'}
 - Điểm đến: {destination}
@@ -375,6 +387,7 @@ TUYỆT ĐỐI KHÔNG viết tips chung chung như "địa điểm đẹp nên g
 - Ngân sách: {budget} VND/người
 - Phong cách: {', '.join(travel_style)}
 - Số người: {people}
+{context_block}
 
 Thực hiện theo thứ tự:
 1. get_weather_forecast({destination}, {min(days,7)})
@@ -474,7 +487,7 @@ def _run_agent_new_sdk(system_prompt: str, user_prompt: str) -> dict:
 
     for _ in range(10):
         response = client.models.generate_content(
-            model="gemini-3.1-flash-lite-preview", contents=messages, config=config)
+            model="gemini-2.5-flash", contents=messages, config=config)
         parts = response.candidates[0].content.parts
         messages.append(genai_types.Content(role="model", parts=parts))
 
@@ -498,7 +511,7 @@ def _run_agent_new_sdk(system_prompt: str, user_prompt: str) -> dict:
 
 def _run_agent_old_sdk(system_prompt: str, user_prompt: str) -> dict:
     model = genai.GenerativeModel(
-        model_name="gemini-3.1-flash-lite-preview",
+        model_name="gemini-2.5-flash",
         system_instruction=system_prompt,
         tools=[{"function_declarations": TOOL_DECLARATIONS}],
     )

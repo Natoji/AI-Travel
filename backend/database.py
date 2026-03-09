@@ -36,6 +36,15 @@ class Trip(Base):
     is_public = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
+
+class UserMemory(Base):
+    __tablename__ = "user_memories"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, index=True, nullable=False)
+    memory_key = Column(String, index=True, nullable=False)
+    memory_value = Column(Text, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
 def get_db():
     db = SessionLocal()
     try:
